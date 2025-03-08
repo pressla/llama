@@ -1,0 +1,159 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: llamapipeline-config
+  namespace: llama
+data:
+  config.yaml: |
+    app:
+      name: LLaMA Pipeline
+      description: LLaMA Pipeline for orchestrating LLM workflows
+    components:
+      - name: llamaindex
+        type: index
+        host: llamaindex
+        port: 8000
+      - name: pinecone
+        type: vector_store
+        host: pinecone
+        port: 6333
+      - name: postgres
+        type: database
+        host: postgres
+        port: 5432
+    pipeline:
+      default_model: gpt-3.5-turbo
+      chunk_size: 1000
+      chunk_overlap: 200
+    logging:
+      level: INFO
+    api:
+      cors_origins:
+        - "*"
+  main.py: |
+    from fastapi import FastAPI, HTTPException, BackgroundTasks
+    from pydantic import BaseModel
+    import os
+    import yaml
+    import logging
+    import requests
+    from typing import List, Dict, Any, Optional
+    
+    # Load configuration
+    with open('/app/config/config.yaml', 'r') as f:
+        config = yaml.safe_load(f)
+    
+    # Configure logging
+    logging.basicConfig(level=config['logging']['level'])
+    logger = logging.getLogger(__name__)
+    
+    # Create FastAPI app
+    app = FastAPI(
+        title=config['app']['name'],
+        description=config['app']['description'],
+    )
+    
+    class DocumentRequest(BaseModel):
+        text: str
+        metadata: Dict[str, Any] = {}
+    
+    class QueryRequest(BaseModel):
+        query: str
+        top_k: int = 5
+    
+    class PipelineRequest(BaseModel):
+        documents: List[DocumentRequest]
+        query: Optional[str] = None
+    
+    class PipelineResponse(BaseModel):
+        pipeline_id: str
+        status: str
+        results: Optional[List[Dict[str, Any]]] = None
+    
+    # In-memory storage for pipeline jobs
+    pipeline_jobs = {}
+    
+    @app.get("/")
+    async def root():
+        return {"message": "Welcome to LLaMA Pipeline"}
+    
+    @app.get("/health")
+    async def health():
+        return {"status": "healthy"}
+    
+    @app.get("/config")
+    async def get_config():
+        return {
+            "components": [comp["name"] for comp in config["components"]],
+            "pipeline": config["pipeline"],
+        }
+    
+    @app.get("/components")
+    async def get_components():
+        return {"components": config["components"]}
+    
+    @app.post("/pipeline", response_model=PipelineResponse)
+    async def create_pipeline(request: PipelineRequest, background_tasks: BackgroundTasks):
+        pipeline_id = f"pipeline_{len(pipeline_jobs) + 1}"
+        pipeline_jobs[pipeline_id] = {"status": "processing", "results": None}
+        
+        # Process in background
+        background_tasks.add_task(process_pipeline, pipeline_id, request)
+        
+        return {
+            "pipeline_id": pipeline_id,
+            "status": "processing",
+            "results": None
+        }
+    
+    @app.get("/pipeline/{pipeline_id}", response_model=PipelineResponse)
+    async def get_pipeline_status(pipeline_id: str):
+        if pipeline_id not in pipeline_jobs:
+            raise HTTPException(status_code=404, detail="Pipeline job not found")
+        
+        return {
+            "pipeline_id": pipeline_id,
+            "status": pipeline_jobs[pipeline_id]["status"],
+            "results": pipeline_jobs[pipeline_id]["results"]
+        }
+    
+    async def process_pipeline(pipeline_id: str, request: PipelineRequest):
+        try:
+            # This is a mock implementation
+            # In a real implementation, we would:
+            # 1. Process documents
+            # 2. Index them in LlamaIndex
+            # 3. Store vectors in Pinecone
+            # 4. Store metadata in PostgreSQL
+            # 5. If query is provided, run query against the index
+            
+            # Simulate processing delay
+            import asyncio
+            await asyncio.sleep(2)
+            
+            # Update job with mock results
+            pipeline_jobs[pipeline_id] = {
+                "status": "completed",
+                "results": [
+                    {"document_id": f"doc_{i}", "status": "indexed"} 
+                    for i in range(len(request.documents))
+                ]
+            }
+            
+            # If query was provided, add mock query results
+            if request.query:
+                pipeline_jobs[pipeline_id]["results"].append({
+                    "query": request.query,
+                    "results": [
+                        {"text": "This is a mock result 1", "score": 0.95},
+                        {"text": "This is a mock result 2", "score": 0.85},
+                        {"text": "This is a mock result 3", "score": 0.75},
+                    ]
+                })
+                
+        except Exception as e:
+            logger.error(f"Error processing pipeline: {str(e)}")
+            pipeline_jobs[pipeline_id] = {
+                "status": "failed",
+                "results": {"error": str(e)}
+            }

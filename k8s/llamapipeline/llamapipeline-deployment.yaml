@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: llamapipeline
+  namespace: llama
+  labels:
+    app: llamapipeline
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: llamapipeline
+  template:
+    metadata:
+      labels:
+        app: llamapipeline
+    spec:
+      containers:
+      - name: llamapipeline
+        image: python:3.9-slim
+        command: ["/bin/bash", "-c"]
+        args:
+          - |
+            pip install fastapi uvicorn pydantic pyyaml psycopg2-binary requests
+            mkdir -p /app
+            cp /app/config/main.py /app/main.py
+            cd /app
+            python -m uvicorn main:app --host 0.0.0.0 --port 8000
+        ports:
+        - containerPort: 8000
+          name: http
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        env:
+        - name: POSTGRES_HOST
+          value: postgres
+        - name: POSTGRES_PORT
+          value: "5432"
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: username
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: password
+        - name: POSTGRES_DB
+          value: llamadb
+        - name: LLAMAINDEX_HOST
+          value: llamaindex
+        - name: LLAMAINDEX_PORT
+          value: "8000"
+        - name: PINECONE_HOST
+          value: pinecone
+        - name: PINECONE_PORT
+          value: "6333"
+        volumeMounts:
+        - name: llamapipeline-config
+          mountPath: /app/config
+        - name: llamapipeline-data
+          mountPath: /app/data
+      volumes:
+      - name: llamapipeline-config
+        configMap:
+          name: llamapipeline-config
+      - name: llamapipeline-data
+        persistentVolumeClaim:
+          claimName: llamapipeline-pvc

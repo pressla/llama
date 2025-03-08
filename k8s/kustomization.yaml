@@ -1,0 +1,30 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: llama
+
+resources:
+  # Postgres
+  - postgres/postgres-secret.yaml
+  - postgres/postgres-statefulset.yaml
+  - postgres/postgres-service.yaml
+  
+  # Pinecone (Milvus)
+  - pinecone/pinecone-pvc.yaml
+  - pinecone/pinecone-deployment.yaml
+  - pinecone/pinecone-service.yaml
+  - pinecone/pinecone-ingress.yaml
+  
+  # LlamaIndex
+  - llamaindex/llamaindex-pvc.yaml
+  - llamaindex/llamaindex-configmap.yaml
+  - llamaindex/llamaindex-deployment.yaml
+  - llamaindex/llamaindex-service.yaml
+  - llamaindex/llamaindex-ingress.yaml
+  
+  # LLaMA Pipeline
+  - llamapipeline/llamapipeline-pvc.yaml
+  - llamapipeline/llamapipeline-configmap.yaml
+  - llamapipeline/llamapipeline-deployment.yaml
+  - llamapipeline/llamapipeline-service.yaml
+  - llamapipeline/llamapipeline-ingress.yaml

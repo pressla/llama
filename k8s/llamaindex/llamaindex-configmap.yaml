@@ -1,0 +1,74 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: llamaindex-config
+  namespace: llama
+data:
+  config.yaml: |
+    app:
+      name: LlamaIndex API
+      description: LlamaIndex API for indexing and querying data
+    database:
+      type: postgres
+    vector_store:
+      type: qdrant
+    logging:
+      level: INFO
+    api:
+      cors_origins:
+        - "*"
+  main.py: |
+    from fastapi import FastAPI, HTTPException
+    from pydantic import BaseModel
+    import os
+    import yaml
+    import logging
+    
+    # Load configuration
+    with open('/app/config/config.yaml', 'r') as f:
+        config = yaml.safe_load(f)
+    
+    # Configure logging
+    logging.basicConfig(level=config['logging']['level'])
+    logger = logging.getLogger(__name__)
+    
+    # Create FastAPI app
+    app = FastAPI(
+        title=config['app']['name'],
+        description=config['app']['description'],
+    )
+    
+    class QueryRequest(BaseModel):
+        query: str
+        top_k: int = 5
+    
+    @app.get("/")
+    async def root():
+        return {"message": "Welcome to LlamaIndex API"}
+    
+    @app.get("/health")
+    async def health():
+        return {"status": "healthy"}
+    
+    @app.get("/config")
+    async def get_config():
+        return {
+            "database": config['database']['type'],
+            "vector_store": config['vector_store']['type'],
+        }
+    
+    @app.post("/query")
+    async def query(request: QueryRequest):
+        try:
+            # This is a mock response since we don't have actual LlamaIndex integration yet
+            return {
+                "query": request.query,
+                "results": [
+                    {"text": "This is a mock result 1", "score": 0.95},
+                    {"text": "This is a mock result 2", "score": 0.85},
+                    {"text": "This is a mock result 3", "score": 0.75},
+                ]
+            }
+        except Exception as e:
+            logger.error(f"Error processing query: {str(e)}")
+            raise HTTPException(status_code=500, detail=str(e))

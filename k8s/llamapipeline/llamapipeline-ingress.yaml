@@ -1,0 +1,19 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: llamapipeline-ingress
+  namespace: llama
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+  - host: harvester
+    http:
+      paths:
+      - path: /llamapipeline
+        pathType: Prefix
+        backend:
+          service:
+            name: llamapipeline
+            port:
+              name: http

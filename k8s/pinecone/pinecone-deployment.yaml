@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pinecone
+  namespace: llama
+  labels:
+    app: pinecone
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pinecone
+  template:
+    metadata:
+      labels:
+        app: pinecone
+    spec:
+      containers:
+      - name: qdrant
+        image: qdrant/qdrant:v1.7.4
+        ports:
+        - containerPort: 6333
+          name: api
+        - containerPort: 6334
+          name: grpc
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        volumeMounts:
+        - name: pinecone-data
+          mountPath: /qdrant/storage
+      volumes:
+      - name: pinecone-data
+        persistentVolumeClaim:
+          claimName: pinecone-pvc

@@ -1,0 +1,19 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: pinecone-ingress
+  namespace: llama
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+  - host: harvester
+    http:
+      paths:
+      - path: /pinecone
+        pathType: Prefix
+        backend:
+          service:
+            name: pinecone
+            port:
+              name: api
