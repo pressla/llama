@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: llamapipeline-ssh
+  namespace: llama
+  labels:
+    app: llamapipeline
+    service: ssh
+spec:
+  ports:
+  - port: 22
+    targetPort: 22
+    nodePort: 30022
+    name: ssh
+  selector:
+    app: llamapipeline
+  type: NodePort

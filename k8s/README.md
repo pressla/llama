@@ -45,6 +45,27 @@ All services are exposed through ingress with the following paths:
 - **LlamaIndex API**: https://harvester/llamaindex
 - **LLaMA Pipeline UI**: https://harvester/llamapipeline
 
+### SSH Access
+
+SSH access to the containers is available through NodePort services:
+
+- **LlamaIndex SSH**: NodePort 30023 (port 22)
+- **LLaMA Pipeline SSH**: NodePort 30022 (port 22)
+
+You can SSH into the containers using:
+
+```bash
+# SSH into LlamaIndex
+ssh root@192.168.178.58 -p 30023
+
+# SSH into LLaMA Pipeline
+ssh root@192.168.178.58 -p 30022
+```
+
+Default credentials:
+- Username: root
+- Password: password
+
 ## Configuration
 
 ### Secrets
@@ -171,6 +192,38 @@ Test LlamaPipeline with a sample document:
 ```bash
 kubectl run -n llama busybox --image=busybox:1.28 --rm -it --restart=Never -- wget -qO- --header="Content-Type: application/json" --post-data='{"documents":[{"text":"This is a test document"}],"query":"test"}' llamapipeline:8000/pipeline
 ```
+
+### Verify SSH Services
+
+Check if SSH services are created:
+
+```bash
+kubectl get services -n llama | grep ssh
+```
+
+Verify SSH daemon is running in the containers:
+
+```bash
+# Check SSH daemon in LlamaIndex
+kubectl exec -t -n llama $(kubectl get pod -n llama -l app=llamaindex -o jsonpath='{.items[0].metadata.name}') -- ps aux | grep sshd
+
+# Check SSH daemon in LlamaPipeline
+kubectl exec -t -n llama $(kubectl get pod -n llama -l app=llamapipeline -o jsonpath='{.items[0].metadata.name}') -- ps aux | grep sshd
+```
+
+Test SSH connection:
+
+```bash
+# Test SSH to LlamaIndex (from another machine)
+ssh -o StrictHostKeyChecking=no root@192.168.178.58 -p 30023 "echo SSH connection successful"
+
+# Test SSH to LlamaPipeline (from another machine)
+ssh -o StrictHostKeyChecking=no root@192.168.178.58 -p 30022 "echo SSH connection successful"
+```
+The default credentials are:
+
+Username: root
+Password: password
 
 ## Troubleshooting
 

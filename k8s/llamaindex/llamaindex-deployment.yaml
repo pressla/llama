@@ -21,6 +21,16 @@ spec:
         command: ["/bin/bash", "-c"]
         args:
           - |
+            apt-get update && apt-get install -y openssh-server
+            mkdir -p /run/sshd
+            echo 'root:password' | chpasswd
+            sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+            sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
+            
+            # Start SSH server in background
+            /usr/sbin/sshd
+            
+            # Install required packages and start application
             pip install fastapi uvicorn pydantic pyyaml psycopg2-binary
             mkdir -p /app
             cp /app/config/main.py /app/main.py
@@ -29,6 +39,8 @@ spec:
         ports:
         - containerPort: 8000
           name: http
+        - containerPort: 22
+          name: ssh
         resources:
           requests:
             memory: "1Gi"

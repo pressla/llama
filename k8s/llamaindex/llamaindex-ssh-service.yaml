@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: llamaindex-ssh
+  namespace: llama
+  labels:
+    app: llamaindex
+    service: ssh
+spec:
+  ports:
+  - port: 22
+    targetPort: 22
+    nodePort: 30023
+    name: ssh
+  selector:
+    app: llamaindex
+  type: NodePort

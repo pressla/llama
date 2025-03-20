@@ -20,6 +20,7 @@ resources:
   - llamaindex/llamaindex-configmap.yaml
   - llamaindex/llamaindex-deployment.yaml
   - llamaindex/llamaindex-service.yaml
+  - llamaindex/llamaindex-ssh-service.yaml
   - llamaindex/llamaindex-ingress.yaml
   
   # LLaMA Pipeline
@@ -27,4 +28,5 @@ resources:
   - llamapipeline/llamapipeline-configmap.yaml
   - llamapipeline/llamapipeline-deployment.yaml
   - llamapipeline/llamapipeline-service.yaml
+  - llamapipeline/llamapipeline-ssh-service.yaml
   - llamapipeline/llamapipeline-ingress.yaml
